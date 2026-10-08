@@ -22,7 +22,7 @@ class ScriptLoadError(Exception):
 class ScriptExit(Exception):
     """SystemExit raised by main, carried through the app as an Exception."""
 
-    def __init__(self, code: object) -> None:
+    def __init__(self, code: str | int | None) -> None:
         super().__init__(code)
         self.code = code
 
