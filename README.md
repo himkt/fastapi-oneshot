@@ -18,7 +18,7 @@ or
 pip install fastapi-oneshot
 ```
 
-Python 3.10 or later and FastAPI 0.115.0 or later are required.
+Python 3.10 or later and FastAPI 0.115.0 or later (below 1.0) are required.
 
 ## Usage
 
