@@ -1,7 +1,7 @@
 import asyncio
 import os
 import sqlite3
-from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
 
@@ -12,7 +12,7 @@ from sampleapp.events import record_event
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[dict[str, Any]]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[dict[str, Any], None]:
     db_path = os.environ["SAMPLEAPP_DB"]
     connection = sqlite3.connect(db_path)
     connection.execute("CREATE TABLE IF NOT EXISTS records (value TEXT NOT NULL)")

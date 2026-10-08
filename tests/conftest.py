@@ -31,10 +31,10 @@ def run_cli(sampleapp_db: Path, sampleapp_events: Path) -> RunCli:
         "SAMPLEAPP_EVENTS": str(sampleapp_events),
     }
 
-    def run(*args: str) -> subprocess.CompletedProcess[str]:
+    def run(*args: str, cwd: Path = TESTS_DIR) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [str(executable), *args],
-            cwd=TESTS_DIR,
+            cwd=cwd,
             env=env,
             capture_output=True,
             text=True,

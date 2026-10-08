@@ -5,11 +5,11 @@ from sampleapp.events import record_event
 legacy_app = FastAPI()
 
 
-@legacy_app.on_event("startup")
+@legacy_app.on_event("startup")  # ty: ignore[deprecated]
 def on_startup() -> None:
     record_event("startup")
 
 
-@legacy_app.on_event("shutdown")
+@legacy_app.on_event("shutdown")  # ty: ignore[deprecated]
 def on_shutdown() -> None:
     record_event("shutdown")
