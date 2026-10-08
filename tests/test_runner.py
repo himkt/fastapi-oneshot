@@ -84,7 +84,7 @@ def test_load_app_rejects_missing_parent_package() -> None:
 
 
 def test_load_app_rejects_missing_attribute() -> None:
-    with pytest.raises(ScriptLoadError):
+    with pytest.raises(ScriptLoadError, match="has no attribute 'no_such_attribute'"):
         load_app("sampleapp.main:no_such_attribute")
 
 
