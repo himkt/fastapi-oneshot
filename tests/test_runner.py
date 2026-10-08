@@ -1,9 +1,20 @@
+import asyncio
+import inspect
+from collections.abc import Callable
+from typing import Annotated, Any
+
 import pytest
 import sampleapp.main
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 
 import fastapi_oneshot
-from fastapi_oneshot.runner import ScriptExit, ScriptLoadError, get_argv, load_app
+from fastapi_oneshot.runner import (
+    ScriptExit,
+    ScriptLoadError,
+    build_endpoint,
+    get_argv,
+    load_app,
+)
 
 
 def test_package_exports_only_get_argv() -> None:
@@ -87,3 +98,122 @@ def test_load_app_propagates_missing_module_imported_by_the_app() -> None:
         load_app("sampleapp.broken:app")
     assert not isinstance(excinfo.value, ScriptLoadError)
     assert excinfo.value.name == "oneshot_missing_dependency"
+
+
+def sync_main_with_dependencies(
+    argv: Annotated[list[str], Depends(get_argv)],
+    request: "Request",
+) -> str:
+    return "discarded"
+
+
+async def async_main_with_dependencies(
+    argv: Annotated[list[str], Depends(get_argv)],
+    request: "Request",
+) -> str:
+    return "discarded"
+
+
+@pytest.mark.parametrize(
+    "main", [sync_main_with_dependencies, async_main_with_dependencies]
+)
+def test_build_endpoint_signature_has_resolved_parameters_and_none_return(
+    main: Callable[..., Any],
+) -> None:
+    endpoint = build_endpoint(main)
+    signature = inspect.signature(endpoint)
+    expected = inspect.signature(main, eval_str=True)
+    assert signature.parameters == expected.parameters
+    assert signature.parameters["request"].annotation is Request
+    assert signature.return_annotation is None
+
+
+@pytest.mark.parametrize(
+    "main", [sync_main_with_dependencies, async_main_with_dependencies]
+)
+def test_build_endpoint_carries_no_wrapped(main: Callable[..., Any]) -> None:
+    assert not hasattr(build_endpoint(main), "__wrapped__")
+
+
+def test_build_endpoint_is_sync_for_sync_main() -> None:
+    assert not inspect.iscoroutinefunction(build_endpoint(sync_main_with_dependencies))
+
+
+def test_build_endpoint_is_coroutine_function_for_async_main() -> None:
+    assert inspect.iscoroutinefunction(build_endpoint(async_main_with_dependencies))
+
+
+def test_build_endpoint_sync_passes_values_and_discards_return_value() -> None:
+    received: dict[str, object] = {}
+
+    def main(argv: list[str]) -> str:
+        received["argv"] = argv
+        return "discarded"
+
+    assert build_endpoint(main)(argv=["--flag"]) is None
+    assert received == {"argv": ["--flag"]}
+
+
+def test_build_endpoint_async_passes_values_and_discards_return_value() -> None:
+    received: dict[str, object] = {}
+
+    async def main(argv: list[str]) -> str:
+        received["argv"] = argv
+        return "discarded"
+
+    assert asyncio.run(build_endpoint(main)(argv=["--flag"])) is None
+    assert received == {"argv": ["--flag"]}
+
+
+def test_build_endpoint_sync_converts_system_exit_to_script_exit() -> None:
+    def main() -> None:
+        raise SystemExit(3)
+
+    with pytest.raises(ScriptExit) as excinfo:
+        build_endpoint(main)()
+    assert excinfo.value.code == 3
+    assert isinstance(excinfo.value.__cause__, SystemExit)
+
+
+def test_build_endpoint_async_converts_system_exit_to_script_exit() -> None:
+    async def main() -> None:
+        raise SystemExit(3)
+
+    with pytest.raises(ScriptExit) as excinfo:
+        asyncio.run(build_endpoint(main)())
+    assert excinfo.value.code == 3
+    assert isinstance(excinfo.value.__cause__, SystemExit)
+
+
+def test_build_endpoint_sync_propagates_other_exceptions_unchanged() -> None:
+    def main() -> None:
+        raise ValueError("boom")
+
+    with pytest.raises(ValueError, match="boom"):
+        build_endpoint(main)()
+
+
+def test_build_endpoint_async_propagates_other_exceptions_unchanged() -> None:
+    async def main() -> None:
+        raise ValueError("boom")
+
+    with pytest.raises(ValueError, match="boom"):
+        asyncio.run(build_endpoint(main)())
+
+
+def test_build_endpoint_sync_main_returning_coroutine_raises_type_error() -> None:
+    async def body() -> None:
+        pass
+
+    coroutine = body()
+
+    def main() -> object:
+        return coroutine
+
+    try:
+        with pytest.raises(
+            TypeError, match="main returned an awaitable; define main with async def"
+        ):
+            build_endpoint(main)()
+    finally:
+        coroutine.close()
