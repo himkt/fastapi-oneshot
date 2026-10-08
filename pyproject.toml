@@ -1,0 +1,37 @@
+[project]
+name = "fastapi-oneshot"
+version = "0.1.0"
+description = "Run one-shot scripts with a FastAPI app's dependencies"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "himkt" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "httpx>=0.23.0,<1.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/himkt/fastapi-oneshot"
+
+[project.scripts]
+fastapi-oneshot = "fastapi_oneshot.cli:main"
+
+[dependency-groups]
+test = ["pytest>=8.0"]
+lint = ["ruff", "ty"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+default-groups = ["test", "lint"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
