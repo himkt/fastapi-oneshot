@@ -26,7 +26,9 @@ def run_cli(sampleapp_db: Path, sampleapp_events: Path) -> RunCli:
     executable = Path(sys.executable).with_name("fastapi-oneshot")
     assert executable.is_file(), f"console script not found at {executable}"
     env = {
-        **os.environ,
+        **{name: value for name, value in os.environ.items() if name != "FORCE_COLOR"},
+        "PYTHON_COLORS": "0",
+        "NO_COLOR": "1",
         "SAMPLEAPP_DB": str(sampleapp_db),
         "SAMPLEAPP_EVENTS": str(sampleapp_events),
     }
