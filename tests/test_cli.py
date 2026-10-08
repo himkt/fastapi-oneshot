@@ -196,7 +196,7 @@ def test_missing_script_path_exits_2(run_cli: RunCli, sampleapp_events: Path) ->
     [
         ("sampleapp.main", "--app must be in MODULE:ATTR form"),
         ("sampleapp.no_such_module:app", "cannot import module"),
-        ("sampleapp.main:no_such_attribute", ""),
+        ("sampleapp.main:no_such_attribute", "has no attribute 'no_such_attribute'"),
         ("sampleapp.main:not_an_app", "--app must point to a FastAPI instance"),
     ],
 )
